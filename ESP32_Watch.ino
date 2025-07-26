@@ -147,7 +147,49 @@ void loop() {
   
   // Update UI (60 FPS target - every 16ms)
   if (current_time - last_ui_update >= 16) {
-    updateUI();
+    switch (system_state.current_screen) {
+      case SCREEN_WATCHFACE:
+        drawWatchFace();
+        break;
+      case SCREEN_APP_GRID:
+        drawAppGrid();
+        break;
+      case SCREEN_MUSIC:
+        drawMusicApp();
+        break;
+      case SCREEN_QUESTS:
+        drawQuestScreen();
+        break;
+      case SCREEN_SETTINGS:
+        drawSettingsApp();
+        break;
+      case SCREEN_NOTES:
+        drawNotesApp();
+        break;
+      case SCREEN_FILE_BROWSER:
+        drawFileBrowserApp();
+        break;
+      case SCREEN_PDF_READER:
+        drawPDFReaderApp();
+        break;
+      default:
+        // Handle game drawing
+        if (system_state.current_app == APP_GAMES) {
+          if (current_game_session.state == GAME_MENU) {
+            drawGameMenu();
+          } else if (current_game_session.current_game == GAME_BATTLE_ARENA) {
+            drawBattleArena();
+          } else if (current_game_session.current_game == GAME_SHADOW_DUNGEON) {
+            drawShadowDungeon();
+          } else if (current_game_session.current_game == GAME_MINI_SNAKE) {
+            drawSnakeGame();
+            updateSnake(); // Update snake game logic
+          }
+        } else {
+          drawWatchFace();
+        }
+        break;
+    }
     last_ui_update = current_time;
   }
   
