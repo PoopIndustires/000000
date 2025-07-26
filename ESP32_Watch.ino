@@ -288,3 +288,130 @@ void loadUserSettings() {
 void saveUserSettings() {
   saveSettingsToFile();
 }
+
+// Watch face drawing functions
+void drawWatchFace() {
+  switch (system_state.current_theme) {
+    case THEME_LUFFY_GEAR5:
+      drawLuffyWatchFace();
+      break;
+    case THEME_SUNG_JINWOO:
+      drawJinwooWatchFace();
+      break;
+    case THEME_YUGO_WAKFU:
+      drawYugoWatchFace();
+      break;
+    default:
+      drawLuffyWatchFace();
+      break;
+  }
+}
+
+// Button handling
+void handleButtonInput() {
+  static bool pwr_button_pressed = false;
+  static bool boot_button_pressed = false;
+  static unsigned long button_press_time = 0;
+  
+  // PWR button (GPIO 0)
+  bool pwr_current = !digitalRead(BTN_PWR); // Active low
+  if (pwr_current && !pwr_button_pressed) {
+    pwr_button_pressed = true;
+    button_press_time = millis();
+  } else if (!pwr_current && pwr_button_pressed) {
+    pwr_button_pressed = false;
+    unsigned long press_duration = millis() - button_press_time;
+    
+    if (press_duration < 300) {
+      // Short press - wake/sleep
+      if (system_state.current_screen == SCREEN_SLEEP) {
+        wakeFromSleep();
+      } else {
+        goToSleep();
+      }
+    } else if (press_duration > 2000) {
+      // Long press - power off
+      Serial.println("Power off requested");
+      goToSleep();
+    }
+  }
+  
+  // BOOT button (GPIO 46) - Menu/Back
+  bool boot_current = !digitalRead(BTN_BOOT); // Active low
+  if (boot_current && !boot_button_pressed) {
+    boot_button_pressed = true;
+    button_press_time = millis();
+  } else if (!boot_current && boot_button_pressed) {
+    boot_button_pressed = false;
+    unsigned long press_duration = millis() - button_press_time;
+    
+    if (press_duration < 300) {
+      // Short press - back/menu
+      if (system_state.current_screen == SCREEN_APP_GRID) {
+        system_state.current_screen = SCREEN_WATCHFACE;
+      } else if (system_state.current_screen != SCREEN_WATCHFACE) {
+        exitCurrentApp();
+      } else {
+        system_state.current_screen = SCREEN_APP_GRID;
+      }
+    }
+    
+    // Reset sleep timer on button press
+    system_state.sleep_timer = millis();
+  }
+}
+
+// Snake game update function
+void updateSnake() {
+  static unsigned long last_snake_update = 0;
+  unsigned long current_time = millis();
+  
+  if (current_game_session.state != GAME_PLAYING) return;
+  if (current_time - last_snake_update < 200) return; // Snake speed
+  
+  last_snake_update = current_time;
+  
+  // Move snake head
+  int new_head_x = current_game_session.snake_x[0];
+  int new_head_y = current_game_session.snake_y[0];
+  
+  switch (current_game_session.direction) {
+    case 0: new_head_y--; break; // Up
+    case 1: new_head_x++; break; // Right
+    case 2: new_head_y++; break; // Down
+    case 3: new_head_x--; break; // Left
+  }
+  
+  // Check boundaries
+  if (new_head_x < 0 || new_head_x >= 15 || new_head_y < 0 || new_head_y >= 12) {
+    current_game_session.state = GAME_OVER;
+    return;
+  }
+  
+  // Check self collision
+  for (int i = 0; i < current_game_session.snake_length; i++) {
+    if (current_game_session.snake_x[i] == new_head_x && 
+        current_game_session.snake_y[i] == new_head_y) {
+      current_game_session.state = GAME_OVER;
+      return;
+    }
+  }
+  
+  // Move snake body
+  for (int i = current_game_session.snake_length - 1; i > 0; i--) {
+    current_game_session.snake_x[i] = current_game_session.snake_x[i - 1];
+    current_game_session.snake_y[i] = current_game_session.snake_y[i - 1];
+  }
+  
+  // Set new head position
+  current_game_session.snake_x[0] = new_head_x;
+  current_game_session.snake_y[0] = new_head_y;
+  
+  // Check food collision
+  if (new_head_x == current_game_session.food_x && 
+      new_head_y == current_game_session.food_y) {
+    current_game_session.snake_length++;
+    current_game_session.score += 10;
+    generateFood();
+  }
+}
