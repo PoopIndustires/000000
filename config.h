@@ -108,7 +108,8 @@ enum AppType {
   APP_FILES,
   APP_SETTINGS,
   APP_PDF_READER,
-  APP_WEATHER
+  APP_WEATHER,
+  APP_GAMES
 };
 
 // ==================== COLOR DEFINITIONS ====================
