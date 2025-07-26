@@ -105,7 +105,42 @@ void loop() {
   }
   
   // Handle touch input
-  handleTouchInput();
+  TouchGesture gesture = handleTouchInput();
+  if (gesture.event != TOUCH_NONE) {
+    handleUITouch(gesture);
+    
+    // Handle specific screen touches
+    switch (system_state.current_screen) {
+      case SCREEN_WATCHFACE:
+        if (gesture.event == TOUCH_SWIPE_UP) {
+          system_state.current_screen = SCREEN_APP_GRID;
+        }
+        break;
+      case SCREEN_APP_GRID:
+        handleAppGridTouch(gesture);
+        break;
+      case SCREEN_QUESTS:
+        // Quest touch handling would go here
+        break;
+      default:
+        // Handle game touches when in games
+        if (system_state.current_app == APP_GAMES) {
+          if (current_game_session.current_game == GAME_BATTLE_ARENA) {
+            handleBattleTouch(gesture);
+          } else if (current_game_session.current_game == GAME_SHADOW_DUNGEON) {
+            handleDungeonTouch(gesture);
+          } else if (current_game_session.current_game == GAME_MINI_SNAKE) {
+            handleSnakeTouch(gesture);
+          } else if (current_game_session.state == GAME_MENU) {
+            handleGameMenuTouch(gesture);
+          }
+        }
+        break;
+    }
+    
+    // Reset sleep timer on any touch
+    system_state.sleep_timer = millis();
+  }
   
   // Handle button input
   handleButtonInput();
