@@ -25,6 +25,8 @@
 #include "ui.h"
 #include "themes.h"
 #include "apps.h"
+#include "games.h"
+#include "quests.h"
 
 // Global system state
 SystemState system_state;
